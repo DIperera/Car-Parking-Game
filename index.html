@@ -12,15 +12,15 @@
         }
         #container {
             display: grid;
-            grid-template-columns: 60px 60px;
-            
+            grid-template-columns: 1fr 1fr;
+            padding-top: 20px;
             row-gap: 20px;
            margin-left: 5vw;
            margin-bottom: 5vw;
         }
         @media screen and (max-width: 600px) {
           #container{
-            column-gap: 50%;
+            column-gap: 40%;
           }
         }
         @media screen and (min-width: 600px) {
@@ -39,11 +39,12 @@
             text-align: center;
             margin: 0;
             padding: 0;
+            background-image: url("https://img.freepik.com/premium-vector/top-view-road_495897-170.jpg?w=2000");
+            background-size: cover;
         }
         #box {
           width: 30px;
           height: 80px;
-            background-color: lightblue;
             position: absolute;
             top: 50%;
             left: 50%;
@@ -63,18 +64,29 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
+            width: 80%;
+            background-color: rgba(172, 255, 47, 0.669);
+            height: 50px;
+            border: 2px solid rgb(116, 26, 26);
         }
-        button, input[type="checkbox"] {
+        input[type="checkbox"] {
             margin: 10px;
             padding: 10px;
-            font-size: 16px;
+            font-size: 25px;
             cursor: pointer;
+
         }
+        
         #score {
             position: fixed;
             top: 10px;
             left: 10px;
             font-size: 20px;
+            background-color: rgba(172, 255, 47, 0.669);
+            height: 50px;
+            border: 2px solid rgb(116, 26, 26);
+            padding: 10px;
+            padding-bottom: 0;
         }
     </style>
 </head>
@@ -101,18 +113,18 @@
 
         <!-- Controls to rotate and move the box -->
         <div class="controls">
-            <button id="left">Left</button>
-            <button id="right">Right</button>
+            <label for="rotationRange">Rotation:</label>
+            <input type="range" id="rotationRange" min="-360" max="180" value="0" step="15">
             <label>
                 <input type="checkbox" id="move"> Move
             </label>
         </div>
+        
     </div>
     
     <script>
       const box = document.getElementById('box');
-      const leftButton = document.getElementById('left');
-      const rightButton = document.getElementById('right');
+      const rotationRange = document.getElementById('rotationRange');
       const moveCheckbox = document.getElementById('move');
       const scoreDisplay = document.getElementById('score');
       const cars = document.getElementById("container").children;
@@ -123,11 +135,13 @@
       function removeCar() {
           if (hiddencar) {
               hiddencar.innerHTML = '<img src="images/carpng.png" alt="1">';
+              hiddencar.style.boxShadow = "0px 0px 0px";
           }
           const position = Math.floor(Math.random() * 10) + 1;
           hiddencar = document.getElementById(`car${position}`);
           hiddencar.innerHTML = `<img src="https://th.bing.com/th/id/R.9e0f40a2190806747addd2971b639347?rik=6ZQV%2f20yd%2b20pA&riu=http%3a%2f%2fwww.pixelstalk.net%2fwp-content%2fuploads%2f2016%2f05%2fFantastic-HD-Black-Wallpapers.jpg&ehk=ieL0e5%2fH5LxQzuaX9QjOqNcueGl4CaXLDUx9YfKL3Ws%3d&risl=&pid=ImgRaw&r=0" alt="Hidden Car">`;
-      }
+          hiddencar.style.boxShadow = "0px 0px 40px rgb(255, 0, 0)";
+        }
   
       removeCar();
   
@@ -136,15 +150,10 @@
       let moveInterval;
   
       // Rotate the box left or right
-      leftButton.addEventListener('click', () => {
-          rotationDegree -= 15;
-          updateBox();
-      });
-  
-      rightButton.addEventListener('click', () => {
-          rotationDegree += 15;
-          updateBox();
-      });
+      rotationRange.addEventListener('input', () => {
+    rotationDegree = parseInt(rotationRange.value);
+    updateBox();
+});
   
       function updateBox() {
           box.style.transform = `translate(-50%, -50%) rotate(${rotationDegree}deg)`;
@@ -158,14 +167,17 @@
           boxPosition.left += Math.sin(radian) * speed;
           boxPosition.top -= Math.cos(radian) * speed;
           updateBox();
-          checkCollision();
+          if (checkCollision()) {
+        clearInterval(moveInterval); // Stop the movement when a collision is detected
+        // Optionally show an alert
+    }
       }
   
       moveCheckbox.addEventListener('change', (event) => {
           if (event.target.checked) {
               moveInterval = setInterval(() => {
                   moveBox();
-              }, 100);
+              }, 70);
           } else {
               clearInterval(moveInterval);
           }
@@ -186,23 +198,30 @@
   
           // Check collision with cars
           for (const car of cars) {
-              const carRect = car.getBoundingClientRect();
-  
-              // Skip hidden car
-              if (car === hiddencar) continue;
-  
-              // Check collision with non-hidden cars
-              if (
-                  boxRect.left < carRect.right &&
-                  boxRect.right > carRect.left &&
-                  boxRect.top < carRect.bottom &&
-                  boxRect.bottom > carRect.top
-              ) {
-                  
-                  resetGame();
-                  return;
-              }
-          }
+            const carRect = car.getBoundingClientRect();
+        
+            // Skip hidden car
+            if (car === hiddencar) continue;
+        
+            // Calculate the center of the box
+            const boxCenterX = boxRect.left + boxRect.width / 2;
+            const boxCenterY = boxRect.top + boxRect.height / 2;
+        
+            // Calculate the center of the car
+            const carCenterX = carRect.left + carRect.width / 2;
+            const carCenterY = carRect.top + carRect.height / 2;
+        
+            // Check if the center of the box is near the center of the car
+            const centerThreshold = 50; // Allowable threshold for the center distance
+        
+            if (
+                Math.abs(boxCenterX - carCenterX) < centerThreshold &&
+                Math.abs(boxCenterY - carCenterY) < centerThreshold
+            ) {
+                // Optionally refresh or reset when the box reaches the car center
+                resetGame(); // or you can add your custom refresh logic
+            }
+        }
   
           // Check if parked successfully in the hidden car
           const hiddenCarRect = hiddencar.getBoundingClientRect();
